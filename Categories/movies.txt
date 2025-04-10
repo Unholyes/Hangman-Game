@@ -1,0 +1,51 @@
+titanic
+inception
+avatar
+gladiator
+interstellar
+the matrix
+jurassic park
+star wars
+harry potter
+lord of the rings
+spiderman
+batman
+superman
+avengers
+iron man
+captain america
+thor
+black panther
+wonder woman
+deadpool
+joker
+frozen
+finding nemo
+toy story
+lion king
+shrek
+despicable me
+mad max
+the godfather
+pulp fiction
+fight club
+forrest gump
+shawshank redemption
+schindler's list
+saving private ryan
+the dark knight
+joker
+dune
+a quiet place
+the conjuring
+it
+paranormal activity
+the exorcist
+the shining
+scream
+halloween
+saw
+nightmare on elm street
+alien
+predator
+the terminator

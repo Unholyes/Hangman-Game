@@ -1,0 +1,51 @@
+guitar
+piano
+violin
+drums
+saxophone
+flute
+trumpet
+trombone
+clarinet
+cello
+double bass
+bass guitar
+ukulele
+banjo
+harmonica
+accordion
+xylophone
+marimba
+triangle
+tambourine
+bongos
+congas
+sitar
+tabla
+didgeridoo
+bagpipes
+harp
+synthesizer
+keytar
+electric guitar
+grand piano
+snare drum
+timpani
+brass section
+woodwind section
+orchestra
+chorus
+mezzo soprano
+baritone
+tenor
+soprano
+bass
+pitch
+octave
+scale
+chord
+melody
+rhythm
+tempo
+beat
+acapella

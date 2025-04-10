@@ -1,0 +1,51 @@
+football
+basketball
+tennis
+baseball
+cricket
+volleyball
+badminton
+rugby
+golf
+hockey
+swimming
+cycling
+table tennis
+wrestling
+boxing
+karate
+judo
+taekwondo
+gymnastics
+skiing
+snowboarding
+surfing
+skateboarding
+archery
+fencing
+rowing
+canoeing
+kayaking
+bobsleigh
+skeleton
+ice hockey
+field hockey
+handball
+polo
+triathlon
+marathon
+sprint
+relay race
+long jump
+high jump
+discus throw
+shot put
+javelin
+weightlifting
+mountain biking
+speed skating
+figure skating
+motocross
+rock climbing
+parkour
+sumo wrestling

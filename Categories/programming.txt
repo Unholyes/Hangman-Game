@@ -1,0 +1,51 @@
+python
+variable
+function
+compiler
+algorithm
+class
+object
+inheritance
+polymorphism
+encapsulation
+recursion
+array
+linkedlist
+stack
+queue
+hashmap
+database
+sql
+json
+xml
+loop
+iteration
+conditional
+pointer
+memory allocation
+heap
+stack overflow
+exception
+debugging
+syntax
+code optimization
+data structure
+big o notation
+binary search
+merge sort
+quick sort
+bubble sort
+software engineering
+api
+framework
+library
+garbage collection
+event handling
+multithreading
+parallel computing
+web development
+machine learning
+artificial intelligence
+cloud computing
+blockchain
+cryptography

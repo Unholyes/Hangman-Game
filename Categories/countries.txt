@@ -1,0 +1,50 @@
+japan
+france
+canada
+brazil
+germany
+italy
+spain
+australia
+china
+india
+mexico
+russia
+south korea
+united states
+united kingdom
+argentina
+netherlands
+sweden
+norway
+switzerland
+greece
+portugal
+egypt
+turkey
+thailand
+indonesia
+vietnam
+philippines
+saudi arabia
+south africa
+morocco
+kenya
+nigeria
+colombia
+peru
+chile
+ukraine
+pakistan
+iran
+new zealand
+malaysia
+poland
+ireland
+denmark
+finland
+belgium
+austria
+hungary
+czech republic
+singapore

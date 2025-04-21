@@ -8,32 +8,224 @@
 #define Maxwordslength 20
 #define MaxScoreboard 100
 #define scoreboard_file "scoreboard.txt"
+
 typedef struct {
     char categoryName[20];
-   	char fileName[50]; 
+    char fileName[50]; 
 } Category;
 
 typedef struct {
     char name[50];
     int score;
+    char category[20];  // Add category field
 } ScoreboardEntry;
-ScoreboardEntry scoreboard[MaxScoreboard];
-int scoreboardSize = 0;
+
+// Linked list node for scoreboard
+typedef struct ScoreboardNode {
+    ScoreboardEntry entry;
+    struct ScoreboardNode* next;
+} ScoreboardNode;
+
+// Linked list node for categories
+typedef struct CategoryNode {
+    Category category;
+    struct CategoryNode* next;
+} CategoryNode;
+
+// Global head pointers
+ScoreboardNode* scoreboardHead = NULL;
+CategoryNode* categoryHead = NULL;
 
 void displayMenu();
 void loadScoreboard();
 void saveScoreToFile();
 void startGame();
-void saveScore(int score);
+void saveScore(int score, const char* category);
 void viewScoreboard();
 void sortScoreboard();
 void printCentered(const char *text, int newLine);
 void printHangman(int attempt);
 void waitForKeypress();
 char* getRandomWord(const char* filename);
+void freeScoreboard();
+void freeCategories();
+void initCategories();
+void addCategory(const char* name, const char* filename);
+
+// New functions for linked list operations
+void insertScore(ScoreboardEntry newEntry) {
+    ScoreboardNode* newNode = (ScoreboardNode*)malloc(sizeof(ScoreboardNode));
+    newNode->entry = newEntry;
+    newNode->next = NULL;
+
+    if (scoreboardHead == NULL) {
+        scoreboardHead = newNode;
+        return;
+    }
+
+    ScoreboardNode* current = scoreboardHead;
+    while (current->next != NULL) {
+        current = current->next;
+    }
+    current->next = newNode;
+}
+
+void sortScoreboard() {
+    if (scoreboardHead == NULL || scoreboardHead->next == NULL) {
+        return;
+    }
+
+    ScoreboardNode* current = scoreboardHead;
+    ScoreboardNode* index = NULL;
+    ScoreboardEntry temp;
+
+    while (current != NULL) {
+        index = current->next;
+        while (index != NULL) {
+            if (current->entry.score < index->entry.score) {
+                temp = current->entry;
+                current->entry = index->entry;
+                index->entry = temp;
+            }
+            index = index->next;
+        }
+        current = current->next;
+    }
+}
+
+void loadScoreboard() {
+    FILE* file = fopen(scoreboard_file, "r");
+    if (file != NULL) {
+        ScoreboardEntry entry;
+        while (fscanf(file, "%49s %d %19s\n", entry.name, &entry.score, entry.category) == 3) {
+            insertScore(entry);
+        }
+        fclose(file);
+    }
+}
+
+void saveScoreToFile() {
+    FILE* file = fopen(scoreboard_file, "w");
+    if (file != NULL) {
+        ScoreboardNode* current = scoreboardHead;
+        while (current != NULL) {
+            fprintf(file, "%s %d %s\n", current->entry.name, current->entry.score, current->entry.category);
+            current = current->next;
+        }
+        fclose(file);
+    } else {
+        printf("Error saving scoreboard to file!\n");
+    }
+}
+
+void viewScoreboard() {
+    system("cls");
+    printCentered("Scoreboard", 1);
+    
+    // Display categories
+    printCentered("Select a Category:", 1);
+    int categoryNumber = 1;
+    CategoryNode* current = categoryHead;
+    while (current != NULL) {
+        printf("   %d. %s\n", categoryNumber++, current->category.categoryName);
+        current = current->next;
+    }
+    printf("   %d. All Categories\n", categoryNumber);
+    printf("\n");
+
+    printCentered("Enter category number: ", 0);
+    int categoryChoice;
+    scanf("%d", &categoryChoice);
+    getchar();
+
+    system("cls");
+    if (categoryChoice == categoryNumber) {
+        // Show all categories
+        printCentered("All Categories Scoreboard", 1);
+        printf("\n");
+        
+        current = categoryHead;
+        while (current != NULL) {
+            printf("Category: %s\n", current->category.categoryName);
+            printf("-------------------\n");
+            
+            ScoreboardNode* scoreNode = scoreboardHead;
+            int count = 0;
+            while (scoreNode != NULL && count < 10) {
+                if (strcmp(scoreNode->entry.category, current->category.categoryName) == 0) {
+                    printf("%d. %s - %d points\n", count + 1, scoreNode->entry.name, scoreNode->entry.score);
+                    count++;
+                }
+                scoreNode = scoreNode->next;
+            }
+            if (count == 0) {
+                printf("No scores yet.\n");
+            }
+            printf("\n");
+            current = current->next;
+        }
+    } else {
+        // Show specific category
+        current = categoryHead;
+        int count = 1;
+        while (current != NULL && count < categoryChoice) {
+            current = current->next;
+            count++;
+        }
+
+        if (current == NULL) {
+            printCentered("Invalid category choice.", 1);
+        } else {
+            printf("Category: %s\n", current->category.categoryName);
+            printf("-------------------\n");
+            
+            ScoreboardNode* scoreNode = scoreboardHead;
+            int count = 0;
+            while (scoreNode != NULL && count < 10) {
+                if (strcmp(scoreNode->entry.category, current->category.categoryName) == 0) {
+                    printf("%d. %s - %d points\n", count + 1, scoreNode->entry.name, scoreNode->entry.score);
+                    count++;
+                }
+                scoreNode = scoreNode->next;
+            }
+            if (count == 0) {
+                printf("No scores yet.\n");
+            }
+        }
+    }
+    waitForKeypress();
+}
+
+void freeScoreboard() {
+    ScoreboardNode* current = scoreboardHead;
+    while (current != NULL) {
+        ScoreboardNode* temp = current;
+        current = current->next;
+        free(temp);
+    }
+    scoreboardHead = NULL;
+}
+
+void saveScore(int score, const char* category) {
+    ScoreboardEntry newEntry;
+    printf("\nEnter your name: ");
+    fgets(newEntry.name, sizeof(newEntry.name), stdin);
+    newEntry.name[strcspn(newEntry.name, "\n")] = '\0';
+    newEntry.score = score;
+    strcpy(newEntry.category, category);
+    insertScore(newEntry);
+    sortScoreboard();
+    saveScoreToFile();
+}
+
+// Add this to main() before return
+void cleanup() {
+    freeScoreboard();
+    freeCategories();
+}
 
 int main() {
-    // Use GetTickCount() for better randomization on Windows
+    
     srand(GetTickCount());
     int choice;
     loadScoreboard();
@@ -60,9 +252,9 @@ int main() {
         }
     } while (choice != 3);
 
+    cleanup();
     return 0;
 }
-
 
 void displayMenu() {
     system("cls"); 
@@ -101,16 +293,8 @@ void printCentered(const char *text, int newLine) {
     }
 }
 
-
-void startGame() {
-    system("cls");
-    int totalScore = 0;
-    int gamesWon = 0;
-    int currentGame = 1;
-    const int maxGames = 3;
-    const int baseScoreMultiplier = 10;
-
-    Category categories[] = {
+void initCategories() {
+    Category defaultCategories[] = {
         {"Computers", "Categories/computers.txt"},
         {"Food", "Categories/food.txt"},
         {"Countries", "Categories/countries.txt"},
@@ -121,33 +305,102 @@ void startGame() {
         {"Music", "Categories/music.txt"}
     };
 
-    int numCategories = sizeof(categories) / sizeof(categories[0]);
+    int numCategories = sizeof(defaultCategories) / sizeof(defaultCategories[0]);
+    
+    int i;
+    for (i = 0; i < numCategories; i++) {
+        CategoryNode* newNode = (CategoryNode*)malloc(sizeof(CategoryNode));
+        newNode->category = defaultCategories[i];
+        newNode->next = categoryHead;
+        categoryHead = newNode;
+    }
+}
+
+void addCategory(const char* name, const char* filename) {
+    CategoryNode* newNode = (CategoryNode*)malloc(sizeof(CategoryNode));
+    strcpy(newNode->category.categoryName, name);
+    strcpy(newNode->category.fileName, filename);
+    newNode->next = categoryHead;
+    categoryHead = newNode;
+}
+
+void freeCategories() {
+    CategoryNode* current = categoryHead;
+    while (current != NULL) {
+        CategoryNode* temp = current;
+        current = current->next;
+        free(temp);
+    }
+    categoryHead = NULL;
+}
+
+// Add this function before startGame
+int isVowel(char c) {
+    c = tolower(c);
+    return (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u');
+}
+
+void startGame() {
+    system("cls");
+    int totalScore = 0;
+    int gamesWon = 0;
+    int currentGame = 1;
+    const int maxGames = 3;
+    const int baseScoreMultiplier = 10;
+
+    // Initialize categories if not already done
+    if (categoryHead == NULL) {
+        initCategories();
+    }
+
+    // Select category once at the start
+    system("cls");
+    printf("Game %d of %d\n", currentGame, maxGames);
+    printf("Current Score: %d\n\n", totalScore);
+
+    // Display categories
+    printCentered("Select a Category:", 1);
+    int categoryNumber = 1;
+    CategoryNode* current = categoryHead;
+    while (current != NULL) {
+        printf("   %d. %s\n", categoryNumber++, current->category.categoryName);
+        current = current->next;
+    }
+    printf("   %d. Back to Main Menu\n", categoryNumber);
+    printf("\n");
+
+    printCentered("Enter category number: ", 0);
+    int categoryChoice;
+    scanf("%d", &categoryChoice);
+    getchar();
+
+    // Handle back option
+    if (categoryChoice == categoryNumber) {
+        return;  // Return to main menu
+    }
+
+    // Find selected category
+    current = categoryHead;
+    int count = 1;
+    while (current != NULL && count < categoryChoice) {
+        current = current->next;
+        count++;
+    }
+
+    if (current == NULL) {
+        printCentered("Invalid category choice. Returning to menu...", 1);
+        return;
+    }
+
+    Category selectedCategory = current->category;
 
     while (gamesWon < maxGames) {
         system("cls");
         printf("Game %d of %d\n", currentGame, maxGames);
         printf("Current Score: %d\n\n", totalScore);
+        printf("Category: %s\n\n", selectedCategory.categoryName);
 
-        int categoryChoice;
-        printCentered("Select a Category:", 1);
-        fflush(stdout);
-        int i;
-        for (i = 0; i < numCategories; i++) {
-            printf("   %d. %s\n", i + 1, categories[i].categoryName);
-        }
-        printf("\n");
-
-        printCentered("Enter category number: ", 0);
-        scanf("%d", &categoryChoice);
-        getchar(); // Consume the newline left by scanf
-
-        if (categoryChoice < 1 || categoryChoice > numCategories) {
-            printCentered("Invalid category choice. Returning to menu...", 1);
-            return;
-        }
-
-        Category selectedCategory = categories[categoryChoice - 1];
-        char* chosenWord = getRandomWord(categories[categoryChoice - 1].fileName);
+        char* chosenWord = getRandomWord(selectedCategory.fileName);
         if (!chosenWord) {
             printf("Failed to get a word. Exiting...\n");
             return;
@@ -158,21 +411,35 @@ void startGame() {
         int attemptsLeft = 6;
         char guessedLetters[26];
         int guessedCount = 0;
-
+        int i;
+        
+        // Initialize guessedWord
         for (i = 0; i < wordLength; i++) {
-            guessedWord[i] = (chosenWord[i] == ' ') ? ' ' : '_';  
+            guessedWord[i] = (chosenWord[i] == ' ') ? ' ' : '_';
         }
         guessedWord[wordLength] = '\0';
+
+        // Array to track available vowels
+        char availableVowels[] = "aeiou";
+        int vowelsLeft = 5;
 
         while (attemptsLeft > 0) {
             system("cls");
             printf("Game %d of %d\n", currentGame, maxGames);
             printf("Current Score: %d\n\n", totalScore);
-            printHangman(attemptsLeft); 
-
             printf("Category: %s\n", selectedCategory.categoryName);
+            printHangman(attemptsLeft); 
+            
+            // Display available vowels
+            printf("\nAvailable Vowels: ");
+            for (i = 0; i < 5; i++) {
+                if (availableVowels[i] != ' ') {
+                    printf("%c ", availableVowels[i]);
+                }
+            }
+            printf("\n\n");
 
-            printf("\nWord: ");
+            printf("Word: ");
             for (i = 0; i < wordLength; i++) {
                 printf("%c ", guessedWord[i]);
             }
@@ -186,10 +453,8 @@ void startGame() {
 
             printf("\nEnter a letter: ");
             char guess;
-            scanf(" %c", &guess);  // This takes the letter input
-
-            // Clear any remaining characters in the input buffer
-            while (getchar() != '\n');  // Consume the leftover newline character after scanf
+            scanf(" %c", &guess); 
+            while (getchar() != '\n');  
 
             int alreadyGuessed = 0;
             for (i = 0; i < guessedCount; i++) {
@@ -201,7 +466,7 @@ void startGame() {
 
             if (alreadyGuessed) {
                 printCentered("You already guessed that letter. Try again.", 1);
-                getchar(); // Wait for user input before continuing
+                getchar(); 
                 continue;
             }
 
@@ -215,13 +480,28 @@ void startGame() {
                 }
             }
 
+            // Handle vowel guesses
+            if (isVowel(guess)) {
+                // Remove the vowel from available vowels
+                for (i = 0; i < 5; i++) {
+                    if (availableVowels[i] == guess) {
+                        availableVowels[i] = ' ';
+                        vowelsLeft--;
+                        break;
+                    }
+                }
+                // Don't decrement attempts for vowel guesses
+                continue;
+            }
+
+            // Only decrement attempts if the guess was wrong and it's not a vowel
             if (!correctGuess) {
                 attemptsLeft--;
             }
 
             if (strcmp(guessedWord, chosenWord) == 0) {
                 system("cls");
-                int gameScore = attemptsLeft * baseScoreMultiplier * currentGame; // Score increases with each game
+                int gameScore = attemptsLeft * baseScoreMultiplier * currentGame;
                 totalScore += gameScore;
                 gamesWon++;
                 
@@ -235,8 +515,11 @@ void startGame() {
                 if (gamesWon < maxGames) {
                     printf("\nPress Enter to continue to the next game...");
                     getchar();
+                    currentGame++;
+                } else {
+                    printf("\nEnter your name: ");
+                    saveScore(totalScore, selectedCategory.categoryName);
                 }
-                currentGame++;
                 break;
             }
         }
@@ -249,23 +532,6 @@ void startGame() {
             printf("Your final score: %d\n", totalScore);
             free(chosenWord);
             
-            // Ask for player's name after losing
-            printf("\nEnter your name: ");
-            char playerName[50];
-            fgets(playerName, sizeof(playerName), stdin);
-            playerName[strcspn(playerName, "\n")] = '\0'; // Remove newline
-
-            // Save the score with the player's name
-            if (scoreboardSize < MaxScoreboard) {
-                strcpy(scoreboard[scoreboardSize].name, playerName);
-                scoreboard[scoreboardSize].score = totalScore;
-                scoreboardSize++;
-                sortScoreboard();
-                saveScoreToFile();
-            } else {
-                printf("Scoreboard is full!\n");
-            }
-            
             waitForKeypress();
             return;
         }
@@ -275,27 +541,8 @@ void startGame() {
     printCentered("Congratulations! You completed all 3 games!", 1);
     printf("\nYour final score: %d\n", totalScore);
     
-    // Ask for player's name after winning
-    printf("\nEnter your name: ");
-    char playerName[50];
-    fgets(playerName, sizeof(playerName), stdin);
-    playerName[strcspn(playerName, "\n")] = '\0'; // Remove newline
-
-    // Save the score with the player's name
-    if (scoreboardSize < MaxScoreboard) {
-        strcpy(scoreboard[scoreboardSize].name, playerName);
-        scoreboard[scoreboardSize].score = totalScore;
-        scoreboardSize++;
-        sortScoreboard();
-        saveScoreToFile();
-    } else {
-        printf("Scoreboard is full!\n");
-    }
-    
     waitForKeypress();
 }
-
-
 
 char* getRandomWord(const char* filename) {
     FILE* file = fopen(filename, "r");
@@ -304,7 +551,6 @@ char* getRandomWord(const char* filename) {
         return NULL;
     }
 
-    // First count how many words we have
     int count = 0;
     char buffer[Maxwordslength];
     while (fgets(buffer, Maxwordslength, file) != NULL) {
@@ -317,18 +563,16 @@ char* getRandomWord(const char* filename) {
         return NULL;
     }
 
-    // Select a random word number
     int randomIndex = rand() % count;
     
-    // Reset file pointer to beginning
+
     rewind(file);
-    
-    // Read until we reach the randomly selected word
+ 
     int currentIndex = 0;
     char* chosenWord = NULL;
     while (fgets(buffer, Maxwordslength, file) != NULL) {
         if (currentIndex == randomIndex) {
-            buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline
+            buffer[strcspn(buffer, "\n")] = '\0'; 
             chosenWord = malloc(strlen(buffer) + 1);
             strcpy(chosenWord, buffer);
             break;
@@ -340,7 +584,6 @@ char* getRandomWord(const char* filename) {
     return chosenWord;
 }
 
-
 void printHangman(int attemptsLeft) {
     switch (attemptsLeft) {
        case 6:
@@ -348,23 +591,23 @@ void printHangman(int attemptsLeft) {
             printf("You have all 6 chances left. Let's go!\n");
             break;
         case 5:
-            printf("\n    +--------+\n    |/       |\n    |      (�_�)\n    |        \n    |\n    |\n    |\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |        \n    |\n    |\n    |\n    |\n==============\n");
             printf("Uh oh! One mistake. Stay focused!\n");
             break;
         case 4:
-            printf("\n    +--------+\n    |/       |\n    |      (�_�)\n    |        ||\n    |        ||\n    |\n    |\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |        ||\n    |        ||\n    |\n    |\n    |\n==============\n");
             printf("Keep going! You can still make it!\n");
             break;
         case 3:
-            printf("\n    +--------+\n    |/       |\n    |      (�_�)\n    |       /||\n    |      / ||\n    |\n    |\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |       /||\n    |      / ||\n    |\n    |\n    |\n==============\n");
             printf("Don't give up! You still have time!\n");
             break;
         case 2:
-            printf("\n    +--------+\n    |/       |\n    |      (�_�)\n    |       /||\\\n    |      / || \\\n    |\n    |\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |       /||\\\n    |      / || \\\n    |\n    |\n    |\n==============\n");
             printf("Uh oh! Just two chances left! Think carefully!\n");
             break;
         case 1:
-            printf("\n    +--------+\n    |/       |\n    |      (�_�)\n    |       /||\\\n    |      / || \\\n    |       /\n    |      /\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |       /||\\\n    |      / || \\\n    |       /\n    |      /\n    |\n==============\n");
             printf("Last chance! Believe in yourself!\n");
             break;
         case 0:
@@ -378,88 +621,6 @@ void waitForKeypress() {
     printf("\nPress Enter to return to the main menu...");
     getchar();
 }
-void saveScore(int score) {
-    if (scoreboardSize < MaxScoreboard) {
-        // Name input is handled only here
-        printf("Enter your name: ");
-        fgets(scoreboard[scoreboardSize].name, sizeof(scoreboard[scoreboardSize].name), stdin);
-        scoreboard[scoreboardSize].name[strcspn(scoreboard[scoreboardSize].name, "\n")] = '\0'; // Remove newline
-        scoreboard[scoreboardSize].score = score;
-        scoreboardSize++;
-    } else {
-        printf("Scoreboard is full!\n");
-    }
-
-    sortScoreboard();
-    saveScoreToFile();  // Save to file after updating the scoreboard
-}
-
-
-
-void sortScoreboard() {
-    // Sort the scoreboard in descending order of scores
-    int i;
-    int j;
-    for (i = 0; i < scoreboardSize - 1; i++) {
-        for (j = i + 1; j < scoreboardSize; j++) {
-            if (scoreboard[i].score < scoreboard[j].score) {
-                ScoreboardEntry temp = scoreboard[i];
-                scoreboard[i] = scoreboard[j];
-                scoreboard[j] = temp;
-            }
-        }
-    }
-}
-void loadScoreboard() {
-    FILE* file = fopen(scoreboard_file, "r");
-    if (file != NULL) {
-        while (fscanf(file, "%49s %d\n", scoreboard[scoreboardSize].name, &scoreboard[scoreboardSize].score) == 2) {
-            scoreboardSize++;
-        }
-        fclose(file);
-    }
-}
-void saveScoreToFile() {
-	int i;
-    FILE* file = fopen(scoreboard_file, "w");
-    if (file != NULL) {
-        for ( i = 0; i < scoreboardSize; i++) {
-            fprintf(file, "%s %d\n", scoreboard[i].name, scoreboard[i].score);
-        }
-        fclose(file);
-    } else {
-        printf("Error saving scoreboard to file!\n");
-    }
-}
-
-void viewScoreboard() {
-    int i;
-    system("cls");
-    printCentered("Scoreboard", 1);
-    printCentered("Top 10 Players", 1);
-    printf("\n");
-
-    // Load the scoreboard if it's not already loaded
-    if (scoreboardSize == 0) {
-        loadScoreboard(); // Load scores from the file
-    }
-
-    if (scoreboardSize == 0) {
-        printCentered("No scores yet.", 1);
-    } else {
-        // Only show top 10 or all if less than 10
-        int displayCount = (scoreboardSize > 10) ? 10 : scoreboardSize;
-        for (i = 0; i < displayCount; i++) {
-            printf("%d. %s - %d points\n", i + 1, scoreboard[i].name, scoreboard[i].score);
-        }
-        if (scoreboardSize > 10) {
-            printf("\n");
-            printCentered("... and %d more players", 1);
-        }
-    }
-    waitForKeypress();
-}
-
 
 
 

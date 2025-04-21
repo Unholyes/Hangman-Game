@@ -1,15 +1,12 @@
-Aaron 290
-Claire 250
-. 170
-Gelo 60
-2 60
-1 60
-Janssen 60
-Gelo 60
-2 60
-123 50
-41 50
-4 50
-4 40
-123 40
-50 40
+Lee 350 Food
+Aaron 340 Computers
+Arkel 310 Music
+ARKEL 310 Food
+Aaron 310 Music
+Clyde 300 Computers
+Delica 290 Movies
+Deli 290 Programming
+Aaron 290 Animals
+Claire 250 Movies
+Raphael 220 Food
+Raphael2 220 Food

@@ -586,28 +586,28 @@ char* getRandomWord(const char* filename) {
 
 void printHangman(int attemptsLeft) {
     switch (attemptsLeft) {
-       case 6:
+        case 6:
             printf("\n    +--------+\n    |/       |\n    |        |\n    |\n    |\n    |\n    |\n    |\n==============\n");
             printf("You have all 6 chances left. Let's go!\n");
             break;
         case 5:
-            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |        \n    |\n    |\n    |\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (•_•)\n    |        \n    |\n    |\n    |\n    |\n==============\n");
             printf("Uh oh! One mistake. Stay focused!\n");
             break;
         case 4:
-            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |        ||\n    |        ||\n    |\n    |\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (•_•)\n    |        ||\n    |        ||\n    |\n    |\n    |\n==============\n");
             printf("Keep going! You can still make it!\n");
             break;
         case 3:
-            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |       /||\n    |      / ||\n    |\n    |\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (•_•)\n    |       /||\n    |      / ||\n    |\n    |\n    |\n==============\n");
             printf("Don't give up! You still have time!\n");
             break;
         case 2:
-            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |       /||\\\n    |      / || \\\n    |\n    |\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (•_•)\n    |       /||\\\n    |      / || \\\n    |\n    |\n    |\n==============\n");
             printf("Uh oh! Just two chances left! Think carefully!\n");
             break;
         case 1:
-            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |       /||\\\n    |      / || \\\n    |       /\n    |      /\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (•_•)\n    |       /||\\\n    |      / || \\\n    |       /\n    |      /\n    |\n==============\n");
             printf("Last chance! Believe in yourself!\n");
             break;
         case 0:

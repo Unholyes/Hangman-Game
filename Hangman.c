@@ -17,24 +17,30 @@ typedef struct {
 typedef struct {
     char name[50];
     int score;
-    char category[20];  // Add category field
+    char category[20];  
 } ScoreboardEntry;
 
-// Linked list node for scoreboard
+
 typedef struct ScoreboardNode {
     ScoreboardEntry entry;
     struct ScoreboardNode* next;
 } ScoreboardNode;
 
-// Linked list node for categories
+
 typedef struct CategoryNode {
     Category category;
     struct CategoryNode* next;
 } CategoryNode;
 
-// Global head pointers
+
+typedef struct UsedWordNode {
+    char word[Maxwordslength];
+    struct UsedWordNode* next;
+} UsedWordNode;
+
 ScoreboardNode* scoreboardHead = NULL;
 CategoryNode* categoryHead = NULL;
+UsedWordNode* usedWordsHead = NULL;
 
 void displayMenu();
 void loadScoreboard();
@@ -51,8 +57,13 @@ void freeScoreboard();
 void freeCategories();
 void initCategories();
 void addCategory(const char* name, const char* filename);
+char* getRandomWordWithLength(const char* filename, int minLength, int maxLength);
+void addUsedWord(const char* word);
+int isWordUsed(const char* word);
+void freeUsedWords();
+void cleanup();
 
-// New functions for linked list operations
+
 void insertScore(ScoreboardEntry newEntry) {
     ScoreboardNode* newNode = (ScoreboardNode*)malloc(sizeof(ScoreboardNode));
     newNode->entry = newEntry;
@@ -97,8 +108,14 @@ void loadScoreboard() {
     FILE* file = fopen(scoreboard_file, "r");
     if (file != NULL) {
         ScoreboardEntry entry;
-        while (fscanf(file, "%49s %d %19s\n", entry.name, &entry.score, entry.category) == 3) {
-            insertScore(entry);
+        char line[256];  
+        
+        freeScoreboard();
+        
+        while (fgets(line, sizeof(line), file) != NULL) {
+            if (sscanf(line, "%49s %d %19s", entry.name, &entry.score, entry.category) == 3) {
+                insertScore(entry);
+            }
         }
         fclose(file);
     }
@@ -109,7 +126,11 @@ void saveScoreToFile() {
     if (file != NULL) {
         ScoreboardNode* current = scoreboardHead;
         while (current != NULL) {
-            fprintf(file, "%s %d %s\n", current->entry.name, current->entry.score, current->entry.category);
+            // Format: name score category
+            fprintf(file, "%s %d %s\n", 
+                current->entry.name, 
+                current->entry.score, 
+                current->entry.category);
             current = current->next;
         }
         fclose(file);
@@ -122,7 +143,6 @@ void viewScoreboard() {
     system("cls");
     printCentered("Scoreboard", 1);
     
-    // Display categories
     printCentered("Select a Category:", 1);
     int categoryNumber = 1;
     CategoryNode* current = categoryHead;
@@ -140,7 +160,6 @@ void viewScoreboard() {
 
     system("cls");
     if (categoryChoice == categoryNumber) {
-        // Show all categories
         printCentered("All Categories Scoreboard", 1);
         printf("\n");
         
@@ -165,7 +184,6 @@ void viewScoreboard() {
             current = current->next;
         }
     } else {
-        // Show specific category
         current = categoryHead;
         int count = 1;
         while (current != NULL && count < categoryChoice) {
@@ -210,18 +228,29 @@ void saveScore(int score, const char* category) {
     ScoreboardEntry newEntry;
     printf("\nEnter your name: ");
     fgets(newEntry.name, sizeof(newEntry.name), stdin);
-    newEntry.name[strcspn(newEntry.name, "\n")] = '\0';
+    newEntry.name[strcspn(newEntry.name, "\n")] = '\0';  
+    
+    int i;
+    for (i = 0; newEntry.name[i] != '\0'; i++) {
+        if (newEntry.name[i] == ' ') {
+            newEntry.name[i] = '_';  
+        }
+    }
+    
     newEntry.score = score;
     strcpy(newEntry.category, category);
+    
+    loadScoreboard();
+    
     insertScore(newEntry);
     sortScoreboard();
     saveScoreToFile();
 }
 
-// Add this to main() before return
 void cleanup() {
     freeScoreboard();
     freeCategories();
+    freeUsedWords();
 }
 
 int main() {
@@ -230,7 +259,6 @@ int main() {
     int choice;
     loadScoreboard();
     
-    // Initialize categories at program start
     if (categoryHead == NULL) {
         initCategories();
     }
@@ -340,7 +368,6 @@ void freeCategories() {
     categoryHead = NULL;
 }
 
-// Add this function before startGame
 int isVowel(char c) {
     c = tolower(c);
     return (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u');
@@ -348,23 +375,22 @@ int isVowel(char c) {
 
 void startGame() {
     system("cls");
+    freeUsedWords();
+    
     int totalScore = 0;
     int gamesWon = 0;
     int currentGame = 1;
-    const int maxGames = 3;
+    const int maxGames = 5;
     const int baseScoreMultiplier = 10;
 
-    // Initialize categories if not already done
     if (categoryHead == NULL) {
         initCategories();
     }
 
-    // Select category once at the start
     system("cls");
     printf("Game %d of %d\n", currentGame, maxGames);
     printf("Current Score: %d\n\n", totalScore);
 
-    // Display categories
     printCentered("Select a Category:", 1);
     int categoryNumber = 1;
     CategoryNode* current = categoryHead;
@@ -380,12 +406,10 @@ void startGame() {
     scanf("%d", &categoryChoice);
     getchar();
 
-    // Handle back option
     if (categoryChoice == categoryNumber) {
-        return;  // Return to main menu
+        return;  
     }
 
-    // Find selected category
     current = categoryHead;
     int count = 1;
     while (current != NULL && count < categoryChoice) {
@@ -406,7 +430,23 @@ void startGame() {
         printf("Current Score: %d\n\n", totalScore);
         printf("Category: %s\n\n", selectedCategory.categoryName);
 
-        char* chosenWord = getRandomWord(selectedCategory.fileName);
+        int minLength, maxLength;
+        if (currentGame <= 2) {
+            printf("Difficulty: Easy (1-5 letters)\n");
+            minLength = 1;
+            maxLength = 5;
+        } else if (currentGame <= 4) {
+            printf("Difficulty: Medium (6-8 letters)\n");
+            minLength = 6;
+            maxLength = 8;
+        } else {
+            printf("Difficulty: Hard (9+ letters)\n");
+            minLength = 9;
+            maxLength = 20;  
+        }
+        printf("\n");
+
+        char* chosenWord = getRandomWordWithLength(selectedCategory.fileName, minLength, maxLength);
         if (!chosenWord) {
             printf("Failed to get a word. Exiting...\n");
             return;
@@ -419,13 +459,11 @@ void startGame() {
         int guessedCount = 0;
         int i;
         
-        // Initialize guessedWord
         for (i = 0; i < wordLength; i++) {
             guessedWord[i] = (chosenWord[i] == ' ') ? ' ' : '_';
         }
         guessedWord[wordLength] = '\0';
 
-        // Array to track available vowels
         char availableVowels[] = "aeiou";
         int vowelsLeft = 5;
 
@@ -486,9 +524,7 @@ void startGame() {
                 }
             }
 
-            // Handle vowel guesses
             if (isVowel(guess)) {
-                // Remove the vowel from available vowels
                 for (i = 0; i < 5; i++) {
                     if (availableVowels[i] == guess) {
                         availableVowels[i] = ' ';
@@ -496,18 +532,25 @@ void startGame() {
                         break;
                     }
                 }
-                // Don't decrement attempts for vowel guesses
                 continue;
             }
 
-            // Only decrement attempts if the guess was wrong and it's not a vowel
             if (!correctGuess) {
                 attemptsLeft--;
             }
 
             if (strcmp(guessedWord, chosenWord) == 0) {
                 system("cls");
-                int gameScore = attemptsLeft * baseScoreMultiplier * currentGame;
+                int difficultyMultiplier;
+                if (currentGame <= 2) {
+                    difficultyMultiplier = 1;  // Easy
+                } else if (currentGame <= 4) {
+                    difficultyMultiplier = 2;  // Medium
+                } else {
+                    difficultyMultiplier = 3;  // Hard
+                }
+                
+                int gameScore = attemptsLeft * baseScoreMultiplier * currentGame * difficultyMultiplier;
                 totalScore += gameScore;
                 gamesWon++;
                 
@@ -523,7 +566,6 @@ void startGame() {
                     getchar();
                     currentGame++;
                 } else {
-                    printf("\nEnter your name: ");
                     saveScore(totalScore, selectedCategory.categoryName);
                 }
                 break;
@@ -538,13 +580,15 @@ void startGame() {
             printf("Your final score: %d\n", totalScore);
             free(chosenWord);
             
+            saveScore(totalScore, selectedCategory.categoryName);
+            
             waitForKeypress();
             return;
         }
     }
 
     system("cls");
-    printCentered("Congratulations! You completed all 3 games!", 1);
+    printCentered("Congratulations! You completed all 5 games!", 1);
     printf("\nYour final score: %d\n", totalScore);
     
     waitForKeypress();
@@ -592,28 +636,28 @@ char* getRandomWord(const char* filename) {
 
 void printHangman(int attemptsLeft) {
     switch (attemptsLeft) {
-        case 6:
+         case 6:
             printf("\n    +--------+\n    |/       |\n    |        |\n    |\n    |\n    |\n    |\n    |\n==============\n");
             printf("You have all 6 chances left. Let's go!\n");
             break;
         case 5:
-            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |        \n    |\n    |\n    |\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (•_•)\n    |        \n    |\n    |\n    |\n    |\n==============\n");
             printf("Uh oh! One mistake. Stay focused!\n");
             break;
         case 4:
-            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |        ||\n    |        ||\n    |\n    |\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (•_•)\n    |        ||\n    |        ||\n    |\n    |\n    |\n==============\n");
             printf("Keep going! You can still make it!\n");
             break;
         case 3:
-            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |       /||\n    |      / ||\n    |\n    |\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (•_•)\n    |       /||\n    |      / ||\n    |\n    |\n    |\n==============\n");
             printf("Don't give up! You still have time!\n");
             break;
         case 2:
-            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |       /||\\\n    |      / || \\\n    |\n    |\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (•_•)\n    |       /||\\\n    |      / || \\\n    |\n    |\n    |\n==============\n");
             printf("Uh oh! Just two chances left! Think carefully!\n");
             break;
         case 1:
-            printf("\n    +--------+\n    |/       |\n    |      (ï¿½_ï¿½)\n    |       /||\\\n    |      / || \\\n    |       /\n    |      /\n    |\n==============\n");
+            printf("\n    +--------+\n    |/       |\n    |      (•_•)\n    |       /||\\\n    |      / || \\\n    |       /\n    |      /\n    |\n==============\n");
             printf("Last chance! Believe in yourself!\n");
             break;
         case 0:
@@ -628,6 +672,79 @@ void waitForKeypress() {
     getchar();
 }
 
+char* getRandomWordWithLength(const char* filename, int minLength, int maxLength) {
+    FILE* file = fopen(filename, "r");
+    if (!file) {
+        printf("Error opening file: %s\n", filename);
+        return NULL;
+    }
+
+    int count = 0;
+    char buffer[Maxwordslength];
+    while (fgets(buffer, Maxwordslength, file) != NULL) {
+        buffer[strcspn(buffer, "\n")] = '\0';
+        int len = strlen(buffer);
+        if (len >= minLength && len <= maxLength && !isWordUsed(buffer)) {
+            count++;
+        }
+    }
+    
+    if (count == 0) {
+        printf("No unused words found in file matching length criteria: %s\n", filename);
+        fclose(file);
+        return NULL;
+    }
+
+    rewind(file);
+    int randomIndex = rand() % count;
+    int currentIndex = 0;
+    char* chosenWord = NULL;
+
+    while (fgets(buffer, Maxwordslength, file) != NULL) {
+        buffer[strcspn(buffer, "\n")] = '\0';
+        int len = strlen(buffer);
+        if (len >= minLength && len <= maxLength && !isWordUsed(buffer)) {
+            if (currentIndex == randomIndex) {
+                chosenWord = malloc(strlen(buffer) + 1);
+                strcpy(chosenWord, buffer);
+                addUsedWord(chosenWord);  
+                break;
+            }
+            currentIndex++;
+        }
+    }
+    
+    fclose(file);
+    return chosenWord;
+}
+
+void addUsedWord(const char* word) {
+    UsedWordNode* newNode = (UsedWordNode*)malloc(sizeof(UsedWordNode));
+    strcpy(newNode->word, word);
+    newNode->next = usedWordsHead;
+    usedWordsHead = newNode;
+}
+
+int isWordUsed(const char* word) {
+    UsedWordNode* current = usedWordsHead;
+    while (current != NULL) {
+        if (strcmp(current->word, word) == 0) {
+            return 1;
+        }
+        current = current->next;
+    }
+    return 0;
+}
+
+void freeUsedWords() {
+    UsedWordNode* current = usedWordsHead;
+    while (current != NULL) {
+        UsedWordNode* temp = current;
+        current = current->next;
+        free(temp);
+    }
+    usedWordsHead = NULL;
+}
 
 
 
